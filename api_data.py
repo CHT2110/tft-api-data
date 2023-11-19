@@ -3,8 +3,6 @@ import time
 from tqdm import tqdm
 from dotenv import load_dotenv
 import os
-import json
-import pdb
 
 # API key is only available for 24 hours once generated.
 # You can get one at developer.riotgames.com
