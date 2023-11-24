@@ -112,6 +112,7 @@ def all_summoners():
                     all_grandmaster_rank_summoners() +
                     all_challenger_rank_summoner()
     )
+
     return summoner_data
 
 def get_player_info(summoner_id):
@@ -223,3 +224,6 @@ def get_all_match_data():
     
     # The output is things like players in a match, their placement, traits, augments etc.  
 
+data = all_master_rank_summoners()
+
+print(data)
