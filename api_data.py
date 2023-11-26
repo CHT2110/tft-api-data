@@ -3,7 +3,7 @@ import time
 from tqdm import tqdm
 from dotenv import load_dotenv
 import os
-
+from mysql_connector import *
 # loading api_key from .env file
 load_dotenv()
 
@@ -224,6 +224,14 @@ def get_all_match_data():
     
     # The output is things like players in a match, their placement, traits, augments etc.  
 
-data = all_master_rank_summoners()
 
-print(data)
+connection = connector()
+
+cursor = connection.cursor()
+
+
+
+create_drop_schema(connection, cursor)
+
+create_tables(connection, cursor)
+
