@@ -16,6 +16,9 @@ start = '0'
 # Count is the amount of mathces we want to fetch per player
 count = '20'
 
+connection = connector()
+
+cursor = connection.cursor()
 
 # The following functions' purpose is to get the puu-id of summoners from Master - Challenger rank on the EU West server to get their match data. 
 
@@ -236,16 +239,14 @@ def get_all_match_data():
     # The output is things like players in a match, their placement, traits, augments etc.  
 
 
-connection = connector()
 
-cursor = connection.cursor()
 
-create_drop_schema(connection, cursor)
-create_tables(connection, cursor)
+#create_drop_schema(connection, cursor)
+#create_tables(connection, cursor)
     
-all_summoners()
-get_all_player_info(cursor)
-get_all_match_data()
+#all_summoners()
+#get_all_player_info(cursor)
+#get_all_match_data()
 
-cursor.close()
-connection.close()
+#cursor.close()
+#connection.close()
