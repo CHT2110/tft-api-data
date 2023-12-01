@@ -4,6 +4,7 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 import os
 from mysql_connector import *
+
 # loading api_key from .env file
 load_dotenv()
 
@@ -113,6 +114,7 @@ def all_summoners():
                     all_challenger_rank_summoner()
     )
 
+    ingest_summoner_data(summoner_data, connection, cursor)
     return summoner_data
 
 def get_player_info(summoner_id):
@@ -137,10 +139,12 @@ def get_player_info(summoner_id):
         }
     '''
 
-def get_all_player_info():
-    # Getting player info for all summoner_ids.
-    summoner_data = all_summoners()
-    summoner_ids = [entry['summonerId'] for entry in summoner_data]
+def get_all_player_info(cursor):
+    # Getting player info for all summoner_ids. 
+    cursor.execute('SELECT summoner_id FROM game_database.summoners')
+
+    summoner_ids = cursor.fetchall()
+    # summoner_ids = [entry['summonerId'] for entry in summoner_data]
     player_data = []
 
     for id in tqdm(summoner_ids, desc = 'Fetching player data'):
@@ -151,8 +155,9 @@ def get_all_player_info():
         time.sleep(1.2)
 
         # TODO This is just for testing since the for loop takes hours to complete due to the API's rate limit, and amount of ids. 
-        if len(player_data) >= 100:
+        if len(player_data) >= 20:
             break
+    ingest_player_info(player_data, connection, cursor)
     return player_data
 
 # The following functions are to fetch the match data of the puu-ids. 
@@ -178,22 +183,24 @@ def get_match_id(puuid):
         "EUW1_6668150430"
     ]
     '''
-def get_all_match_ids():
-    player_data = get_all_player_info()
-    puuids = [entry['puuid'] for entry in player_data]
-    all_match_ids = []
+def get_all_match_ids(cursor):
+    cursor.execute('SELECT puu_id FROM game_database.player_info')
+    puuids = cursor.fetchall()
+    # player_data = get_all_player_info()
+    # puuids = [entry['puuid'] for entry in player_data]
+    unique_match_ids = set()
 
     for id in tqdm(puuids, desc = 'Fetching match ids'):
         match_id = get_match_id(id)
-        all_match_ids.extend(match_id)
+        unique_match_ids.update(match_id)
         
         # The Riot api only allows 100 requests every 2 minutes.
         time.sleep(1.2)
 
         # TODO This is just for testing since the for loop takes hours to complete due to the API's rate limit, and amount of ids. 
-        if len(all_match_ids) >= 100:
+        if len(unique_match_ids) >= 100:
             break
-    return all_match_ids
+    return unique_match_ids
 
 def get_match_data(match_id):
     url_match_data = 'https://europe.api.riotgames.com/tft/match/v1/matches/' + match_id + '?api_key=' + api_key
@@ -205,7 +212,7 @@ def get_match_data(match_id):
 
 def get_all_match_data():
     
-    match_ids = get_all_match_ids()
+    match_ids = get_all_match_ids(cursor)
 
     match_data = []
 
@@ -217,11 +224,15 @@ def get_all_match_data():
         time.sleep(1.2)
 
         # TODO This is just for testing since the for loop takes hours to complete due to the API's rate limit, and amount of ids. 
-        if len(match_data) >= 100:
+        if len(match_data) >= 20:
             break
+    
+    ingest_metadata(match_data, connection, cursor)
+    ingest_participant_data(match_data, connection, cursor)
     
     return match_data
     
+
     # The output is things like players in a match, their placement, traits, augments etc.  
 
 
@@ -229,9 +240,12 @@ connection = connector()
 
 cursor = connection.cursor()
 
-
-
 create_drop_schema(connection, cursor)
-
 create_tables(connection, cursor)
+    
+all_summoners()
+get_all_player_info(cursor)
+get_all_match_data()
 
+cursor.close()
+connection.close()
