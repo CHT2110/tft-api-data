@@ -84,7 +84,8 @@ def create_tables(connection, cursor):
     );''')
     
     cursor.execute('''CREATE TABLE IF NOT EXISTS traits (
-        id int auto_increment primary key,
+        trait_id int auto_increment primary key,
+        participant_id int,
         puuid varchar(250),
         name varchar(200),
         num_units int,
@@ -94,10 +95,13 @@ def create_tables(connection, cursor):
     );''')
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS units (
-        id int auto_increment primary key,
+        unit_id int auto_increment primary key,
+        participant_id int,
         puuid varchar(250),
         character_id varchar(200),
-        itemnames text,
+        itemname_1 varchar(200),
+        itemname_2 varchar(200),
+        itemname_3 varchar(200),
         name varchar(200),
         rarity int,
         tier int
@@ -245,6 +249,55 @@ def ingest_participant_data(match_data, connection, cursor):
                     '''
                     values_augments = (participant_id, puuid, augment_name)
                     cursor.execute(query_augments, values_augments)
+                    
+            # Extract traits data
+            traits = participant.get('traits')
+            if traits:
+                for trait in traits:
+                    name = trait['name']
+                    num_units = trait['num_units']
+                    style = trait['style']
+                    tier_current = trait['tier_current']
+                    tier_total = trait['tier_total']
+
+                    # Insert data into the traits table
+                    query_traits = '''
+                        INSERT INTO traits 
+                        (participant_id, puuid, name, num_units, style, tier_current, tier_total) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    '''
+                    values_traits = (participant_id, puuid, name, num_units, style, tier_current, tier_total)
+                    cursor.execute(query_traits, values_traits)
+
+                    
+            # Extract units data
+            units = participant.get('units')
+            if units:
+                for unit in units:
+                    character_id = unit['character_id']
+                    item_names = unit.get('itemNames', [None, None, None])
+                    name = unit['name']
+                    rarity = unit['rarity']
+                    tier = unit['tier']
+
+                    # Check the length of item_names and adjust the values accordingly
+                    if len(item_names) >= 3:
+                        item_name_1, item_name_2, item_name_3 = item_names[:3]
+                    elif len(item_names) == 2:
+                        item_name_1, item_name_2, item_name_3 = item_names[0], item_names[1], None
+                    elif len(item_names) == 1:
+                        item_name_1, item_name_2, item_name_3 = item_names[0], None, None
+                    else:
+                        item_name_1, item_name_2, item_name_3 = None, None, None
+
+                    # Insert data into the units table
+                    query_units = '''
+                        INSERT INTO units 
+                        (participant_id, puuid, character_id, itemname_1, itemname_2, itemname_3, name, rarity, tier) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    '''
+                    values_units = (participant_id, puuid, character_id, item_name_1, item_name_2, item_name_3, name, rarity, tier)
+                    cursor.execute(query_units, values_units)
 
     # Commit the changes
     connection.commit()
