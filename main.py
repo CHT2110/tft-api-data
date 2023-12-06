@@ -13,12 +13,17 @@ start = '0'
 # Count is the amount of mathces we want to fetch per player
 count = '20'
 
-create_drop_schema(connection, cursor)
-create_tables(connection, cursor)
+def main():
+    create_drop_schema(connection, cursor)
+    create_tables(connection, cursor)
+        
+    all_summoners()
+    get_all_player_info(cursor)
+    get_all_match_data()
     
-all_summoners()
-get_all_player_info(cursor)
-get_all_match_data()
+    cursor.close()
+    connection.close()
 
-cursor.close()
-connection.close()
+
+if __name__ == "__main__":
+    main()
